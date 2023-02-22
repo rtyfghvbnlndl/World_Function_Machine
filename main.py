@@ -288,7 +288,7 @@ wlan.active(True)
 if not wlan.isconnected():
     lcdC.display.text('wifi...',0,0)
     lcdC.display.show()
-
+#改一下wifi的ssid和密码
     wlan.connect('openwrt', 'open1234')
     for i in range(25):
         if not wlan.isconnected():

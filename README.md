@@ -17,6 +17,15 @@
 + 上电后会显示动画，对时。
 + key3和led灯连接，按下led会亮。
 + 世界线变动率测试仪模式下，led会闪，来指示它在探索世界线，所以key3不能按。此外key2无作用。  
+
+需要手动在```main.py```中填入ssid和密码
+```python
+if not wlan.isconnected():
+    lcdC.display.text('wifi...',0,0)
+    lcdC.display.show()
+#改一下wifi的ssid和密码
+    wlan.connect('openwrt', 'open1234')
+```
 ### 原理图&清单&图片
 先看看世界线变动率测试仪！数字变化的时候一个直插3mmled会亮。
 ![世界线变动率测试仪](./pic/world_function.jpg)

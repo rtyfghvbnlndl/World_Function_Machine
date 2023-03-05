@@ -1,0 +1,1 @@
+wlan.connect('openwrt', 'open1234')

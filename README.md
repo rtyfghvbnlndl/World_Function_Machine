@@ -8,7 +8,8 @@
 + 时钟
 + 显示传感器测得数据  
 
-***建议不要用快充充电器供电。***
+### 更新
++ 2023-3-5 新增手机WiFi配网，但是esp32s内存不够没有跑起来。
 
 ### 说明
 + 上电会进入【时钟，世界线变动率测试仪，计时器，测试模式】中一个模式，按key1切换模式。
@@ -18,13 +19,9 @@
 + key3和led灯连接，按下led会亮。
 + 世界线变动率测试仪模式下，led会闪，来指示它在探索世界线，所以key3不能按。此外key2无作用。  
 
-需要手动在```main.py```中填入ssid和密码
+需要手动在```db.txt```中填入ssid和密码
 ```python
-if not wlan.isconnected():
-    lcdC.display.text('wifi...',0,0)
-    lcdC.display.show()
-#改一下wifi的ssid和密码
-    wlan.connect('openwrt', 'open1234')
+wlan.connect('ssid', 'passwd')
 ```
 ### 原理图&清单&图片
 先看看世界线变动率测试仪！数字变化的时候一个直插3mmled会亮。
@@ -62,5 +59,6 @@ if not wlan.isconnected():
 2. bh1750.py https://github.com/catdog2/mpy_bh1750fvi_esp8266
 3. bmp085.py https://github.com/robert-hh/BMP085_BMP180
 4. ssd1306.py https://github.com/adafruit/micropython-adafruit-ssd1306
+5. microdot.py https://github.com/miguelgrinberg/microdot
 
 

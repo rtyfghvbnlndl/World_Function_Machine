@@ -14,70 +14,66 @@ lux = SoftI2C(scl=Pin(22), sda=Pin(23), freq=100000)
 press = SoftI2C(scl=Pin(18), sda=Pin(19), freq=100000)
 rtc = RTC()
 
-dht11 = dht.DHT11(Pin(4,Pin.IN,pull=Pin.PULL_UP))
-lcdC = digitron.digitron(lcd)
-luxC = bh1750.sample(lux)
-pressC = BMP085.BMP085(press)
-pressC.oversample = 2
-pressC.sealevel = 101325
-ds = ds1302.DS1302(Pin(27),Pin(13),Pin(5))
-ds.date_time
-world_change_rate=random.randint(0,1000000)/100000000
-counter=0
-#功能——测试1
-def test1():
-    global counter
-
-    for i in range(8):
-        try:
-            lcd.writeto(0x70, lcdC.map[i])
-            lcdC.display.fill(1)
-            lcdC.display.text('display%s'%i,0,0,0)
-            lcdC.display.show()
-        except:pass
-    time.sleep(1)
-    if counter==35:
-        counter=0
-    else:
-        counter+=1
-#功能——测试2
-def test2():
-    global counter
-    try:
-        temp = pressC.temperature
-        p = pressC.pressure
-        altitude = pressC.altitude
-        luxC = bh1750.sample(lux)
-    except not KeyboardInterrupt:
-        pass
-    lcd.writeto(0x70, lcdC.map[7])
-    try:
-        lcdC.display.fill(0)
-        lcdC.display.text('temperature:%s'%temp,0,0,1)
-        lcdC.display.text('pressure:%s'%p,0,8,1)
-        lcdC.display.text('altitude:%s'%altitude,0,16,1)
-        lcdC.display.text('lux:%s'%luxC,0,24,1)
-        lcdC.display.show()
-    except:pass
-
+lcdC = digitron.digitron1(lcd)
+try:
+    dht11 = dht.DHT11(Pin(4,Pin.IN,pull=Pin.PULL_UP))
     dht11.measure()
-    DT=dht11.temperature()
-    DH=dht11.humidity()
+except:
+    dht11=False
+for i in range(5):
+    if bh1750.sample(lux):
+        luxC = True
+        break
+    time.sleep(0.2)
+else:
+    luxC=False
+try:
+    pressC = BMP085.BMP085(press)
+    pressC.oversample = 2
+    pressC.sealevel = 101325
+except OSError:
+    pressC = False
+ds = ds1302.DS1302(Pin(27),Pin(13),Pin(5))
 
-    lcd.writeto(0x70, lcdC.map[6])
-    lcdC.display.fill(0)
-    lcdC.display.text('t:%s'%DT,0,0,1)
-    lcdC.display.text('h:%s'%DH,0,8,1)
-    lcdC.display.show()
+#功能——浏览器配网
+def do_network():
+    global init, counter
+    if not init:
+        lcd.writeto(0x70, b'\xff')
+        lcdC.display.fill(0)
+        lcdC.display.text('Connect to wifi?',0,8)
+        lcdC.display.text('Press KEY2!',0,16)
+        if wlan.isconnected():
+            lcdC.display.text('WIFI Connected.',0,0)
+        else:
+            lcdC.display.text('WIFI NOT Connected.',0,0)
+        lcdC.display.show()
+        init=True
+    else:
+        time.sleep(0.2)
+        if not key2.value():
+            while not key2.value():
+                pass
+                
+            import connect_wifi_by_web
 
-    lcd.writeto(0x70, lcdC.map[4])
-    lcdC.display.fill(0)
-    lcdC.display.text('time:%s'%ds.date_time(),0,0,1)
-    lcdC.display.show()
+            lcdC.display.fill(0)
+            lcdC.display.text('Conect to:.',0,0)
+            lcdC.display.text('ESP32_AP:',0,8)
+            lcdC.display.text('Open webpage:',0,16)
+            lcdC.display.text('192.168.4.1',0,24)
+            lcdC.display.show()
 
-    lcdC.show(b'\x0f','0123456789qwertyuiopalksjdhfgzmxncbv'[counter])
-    time.sleep(0.1)
-    if counter==35:
+            ap=connect_wifi_by_web.connet_by_webserver(wlan)
+            ap.active(False)
+
+            lcdC.display.fill(0)
+            if wlan.isconnected():
+                lcdC.display.text('DONE!',0,24)
+            else:
+                lcdC.display.text('FAIL!',0,24)
+            lcdC.display.show()
+    if counter==50:
         counter=0
         lcdC.move()
     else:
@@ -92,37 +88,40 @@ def clock():
     if counter<170:
         try:
             lcdC.symbol(b'\x24', clock_dot[counter%2])
-        except not KeyboardInterrupt:pass
+        except:pass
         try:
             hour=rtc.datetime()[4]
             lcdC.show(b'\x01', str(hour//10))
             lcdC.show(b'\x02', str(hour%10))
-        except not KeyboardInterrupt:pass
+        except:pass
         try:
             minute=rtc.datetime()[5]
             lcdC.show(b'\x08', str(minute//10))
             lcdC.show(b'\x10', str(minute%10))
-        except not KeyboardInterrupt:pass
+        except:pass
         try:
             second=rtc.datetime()[6]
             lcdC.show(b'\x40', str(second//10))
             lcdC.show(b'\x80', str(second%10))
             print(lcdC.pp,lcdC.px)
             time.sleep(0.1)
-        except not KeyboardInterrupt:pass
-    elif counter<174:
+        except:pass
+    elif counter<174 and (pressC or dht11):
         lcd.writeto(0x70, b'\xff')
         try:
             s = str(pressC.temperature)+'c'
         except not KeyboardInterrupt:
-            s = 0
+            try:
+                s = dht11.measure()
+            except not KeyboardInterrupt:
+                s = 0
         print(s)
         while len(s)<8:
             s+=' '
         lcdC.showlong(s)
         time.sleep(1)
 
-    elif counter<178:
+    elif counter<178 and pressC:
         lcd.writeto(0x70, b'\xff')
         try:
             s = str(pressC.pressure)+'hpa'
@@ -134,7 +133,7 @@ def clock():
         lcdC.showlong(s)
         time.sleep(1)
 
-    elif counter<182:
+    elif counter<182 and luxC:
         lcd.writeto(0x70, b'\xff')
         try:
             s = str(bh1750.sample(lux))+'lux'
@@ -146,8 +145,11 @@ def clock():
         lcdC.showlong(s)
         time.sleep(1)
     
-    elif counter<185:
-        dht11.measure()
+    elif counter<185 and dht11:
+        try:
+            dht11.measure()
+        except:
+            counter=185
         lcd.writeto(0x70, b'\xff')
         try:
             s = str(dht11.humidity())+'%'
@@ -158,7 +160,8 @@ def clock():
             s+=' '
         lcdC.showlong(s)
         time.sleep(1)
-    
+    else:
+        counter=185
     print(counter)
     if counter>=185:
         counter=0
@@ -272,11 +275,13 @@ def timer():
     else:
         counter+=1
 #变量
+world_change_rate=random.randint(0,1000000)/100000000
+counter=0
 module = {}
-mode=['timer()','world_function()','test2()','test1()','clock()',]
+mode=[timer, world_function, do_network, clock,]
 lcdC.start()
 mode_num=0
-clock_dot=[';',':']
+clock_dot=(';',':',)
 
 lcd.writeto(0x70, b'\xff')
 lcdC.display.fill(0)
@@ -288,17 +293,20 @@ wlan.active(True)
 if not wlan.isconnected():
     lcdC.display.text('wifi...',0,0)
     lcdC.display.show()
-#改一下wifi的ssid和密码
-    wlan.connect('openwrt', 'open1234')
-    for i in range(25):
-        if not wlan.isconnected():
-            key3.value(0)
-            time.sleep(0.2)
-            key3.value(1)
-        else:
-            lcdC.display.text('done!',0,8)
-            lcdC.display.show()
-            module['wifi']=True
+    try:
+        with open('db.txt', 'r', encoding='utf-8',) as f:
+            eval(f.read())
+        #wlan.connect('openwrt', 'open1234')
+        for i in range(25):
+            if not wlan.isconnected():
+                key3.value(0)
+                time.sleep(0.2)
+                key3.value(1)
+            else:
+                lcdC.display.text('done!',0,8)
+                lcdC.display.show()
+                module['wifi']=True
+    except:pass
 
 if not wlan.isconnected():
     module['wifi']=False
@@ -354,9 +362,10 @@ while True:
         while not key1.value():#阻塞
             pass
         mode_num+=1
+        init=False
         counter=0
         key3 = Pin(17,Pin.IN,pull=Pin.PULL_UP)
 
     if mode_num==len(mode):
         mode_num=0
-    eval(mode[mode_num])
+    mode[mode_num]()

@@ -1,7 +1,6 @@
 from time import sleep
 import ssd1306
-
-class digitron(object):
+class digitron1(object):
     def __init__(self,lcd):
         self.px = 0
         self.pp = 1

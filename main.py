@@ -15,11 +15,7 @@ press = SoftI2C(scl=Pin(18), sda=Pin(19), freq=100000)
 rtc = RTC()
 
 lcdC = digitron.digitron1(lcd)
-try:
-    dht11 = dht.DHT11(Pin(4,Pin.IN,pull=Pin.PULL_UP))
-    dht11.measure()
-except:
-    dht11=False
+dht11 = dht.DHT11(Pin(4,Pin.IN,pull=Pin.PULL_UP))
 for i in range(5):
     if bh1750.sample(lux):
         luxC = True
@@ -106,55 +102,56 @@ def clock():
             print(lcdC.pp,lcdC.px)
             time.sleep(0.1)
         except:pass
-    elif counter<174 and (pressC or dht11):
+    elif counter<174:
         lcd.writeto(0x70, b'\xff')
         try:
             s = str(pressC.temperature)+'c'
-        except not KeyboardInterrupt:
+        except:
             try:
-                s = dht11.measure()
-            except not KeyboardInterrupt:
-                s = 0
+                dht11.measure()
+                s = str(dht11.temperature())+'c'
+            except:
+                s = 'None'
+                counter=174
         print(s)
         while len(s)<8:
             s+=' '
         lcdC.showlong(s)
         time.sleep(1)
 
-    elif counter<178 and pressC:
+    elif counter<178:
         lcd.writeto(0x70, b'\xff')
         try:
             s = str(pressC.pressure)+'hpa'
-        except not KeyboardInterrupt:
-            s = 0
+        except:
+            s = 'None'
+            counter=178
         print(s)
         while len(s)<8:
             s+=' '
         lcdC.showlong(s)
         time.sleep(1)
 
-    elif counter<182 and luxC:
+    elif counter<182:
         lcd.writeto(0x70, b'\xff')
         try:
             s = str(bh1750.sample(lux))+'lux'
-        except not KeyboardInterrupt:
-            s = 0
+        except:
+            s = 'None'
+            counter=182
         print(s)
         while len(s)<8:
             s+=' '
         lcdC.showlong(s)
         time.sleep(1)
     
-    elif counter<185 and dht11:
+    elif counter<185:
         try:
             dht11.measure()
-        except:
-            counter=185
-        lcd.writeto(0x70, b'\xff')
-        try:
             s = str(dht11.humidity())+'%'
-        except not KeyboardInterrupt:
-            s = 0
+        except:
+            s = 'None       '
+            counter=185
         print(s)
         while len(s)<8:
             s+=' '
